@@ -4,7 +4,7 @@ from scipy.stats import rankdata
 
 #author: Roman Shraga
 #
-#This script goes through a list of allele frequencies per population and picks a set of AIMs for ancestry estimation
+#purpose: This script goes through a list of allele frequencies per population and picks a set of AIMs for ancestry estimation
 #
 #use: python pick_aims.py
 
@@ -28,45 +28,37 @@ def pairwise_fst(p1,p2):
 
 #set up population to continent dictionary
 pop_geo_region  = {}
-f2 = open("country_to_continent","r")
-for line in f2:
+f = open("country_to_continent","r")
+for line in f:
 	pts = line.strip().split("|")
 	pop_geo_region[pts[1]] = pts[0]
-f2.close()
+f.close()
 
 geo_regions = ["African","Central Asian","East Asian","European","Middle Eastern","Native American","Native Oceanian","South Asian"]
 
-#array to keep track of fst values
+#arrays and dicts to keep track of fst values
 fst_arr = []
-rsid_pop_dict = {}
-rsid_geo_dict = {}
-rsid_allele = {}
-
-pop_arr = []
-geo_arr = []
+rsid_info_dict = {}
 ind_geo = {}
-
 rsid_order = []
 pair_order = []
+
 f = open("alfred_allele_freqs","r")
 for line in f:
 	parts = line.strip().split("|")
 	rsid = parts[0]
-	rsid_allele[rsid] = parts[1]
+	allele = parts[1]
+
+	rsid_info_dict[rsid] = {'allele': allele}
 
 	#if we are on the first line
 	if rsid == "rsid":
 		for ind,pop in enumerate(parts[2:]):
 			#if the population is in our set of included populations
 			if pop in pop_geo_region and pop_geo_region[pop] in geo_regions:
-				#list to keep track of continent order
-				geo_arr.append(pop_geo_region[pop])
-				#list to keep track of population order
-				pop_arr.append(pop)
 				#index to population dict
 				ind_geo[ind] = pop_geo_region[pop]
 
-		geo_arr = np.array(geo_arr)
 		continue
 	
 	geo_dict = {}
@@ -82,15 +74,13 @@ for line in f:
 
 			pop_freq_array.append(float(freq))
 
-	rsid_pop_dict[rsid] = pop_freq_array
-
 	geo_freq_arr = []
 
 	#average population frequencies to get continet level frequency
 	for geo in geo_regions:
 		geo_freq_arr.append(geo_dict[geo][0] / float(geo_dict[geo][1]))
 
-	rsid_geo_dict[rsid] = geo_freq_arr
+	rsid_info_dict[rsid]['geo_freq'] = geo_freq_arr
 	
 	#compute all pairwise fsts
 	avg_reg = {}
@@ -158,18 +148,8 @@ o.write("rsid|allele|%s\n" % ("|".join(geos_included)))
 for rsid in rsid_set:
 	final_freq_arr = []
 	for i,geo in enumerate(geo_regions):
-		if geo not in ("Middle Eastern","Central Asian"):
-			final_freq_arr.append("%.3f" % max(min(rsid_geo_dict[rsid][i],.99),.01))
+		if geo in geos_included:
+			final_freq_arr.append("%.3f" % max(min(rsid_info_dict[rsid]['geo_freq'][i],.99),.01))
 
-	o.write("%s|%s|%s\n" % (rsid,rsid_allele[rsid],"|".join(final_freq_arr)))
+	o.write("%s|%s|%s\n" % (rsid,rsid_info_dict[rsid]['allele'],"|".join(final_freq_arr)))
 o.close()
-
-#write final allele freqs per population
-o = open("aim_allele_freqs_pop","w")
-o.write("rsid|allele|%s\n" % ("|".join(pop_arr)))
-for rsid in rsid_set:
-	final_freq_arr = []
-	for i,pop in enumerate(pop_arr):
-		final_freq_arr.append("%.3f" % max(min(rsid_pop_dict[rsid][i],.99),.01))
-
-	o.write("%s|%s|%s\n" % (rsid,rsid_allele[rsid],"|".join(final_freq_arr)))

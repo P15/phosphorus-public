@@ -5,9 +5,9 @@ import multiprocessing
 
 #author: Roman Shraga
 #
-#This script predicts ethnicity admixture for a file containing genotype information.
+#purpose: This script predicts ethnicity admixture for a file containing genotype information.
 #
-#use: python predict_ancestry.py -t <num_threads> -i <rsid_info_file> -g <genotype_file> -o <output file name>
+#use: python predict_ancestry.py -t <num_threads> -i <aim_allele_freqs> -g <genotype_file> -o <output file name>
 
 
 def compute_likelihood(g,f,q):
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
 	sample_num = 0
 	for line in f2:
-		parts = line.strip().split(",")
+		parts = line.strip().split("\t")
 		if parts[0] == 'sample':
 			rsid_order = parts[1:]
 		else:
@@ -160,4 +160,3 @@ if __name__ == '__main__':
 
 
 	print "Finished Predicting Ethnicity"
-
