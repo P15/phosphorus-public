@@ -130,6 +130,87 @@ def Sample_Processing(Mean_Threshold, Mean_EstimatedRobustMode, Ratio, Sample_Na
     
     return R
 
+
+#%%    
+def RunOnAllValidations(x):
+    
+    Repeates = x[0] 
+    N_Block = x[1]
+    threshold_int = x[2] 
+    Ratio = x[3]
+  
+    Repeates = int(np.around(Repeates))
+    N_Block = int(np.around(N_Block))
+    if threshold_int >= 1:        
+        threshold_int = 1 - np.finfo(float).eps
+    
+      
+    OperatingSystem = platform.system()
+    if OperatingSystem == 'Darwin':    
+        FilesMainPath = '"/Mohammad/"'
+    elif OperatingSystem == 'Windows':    
+        FilesMainPath = '"C:\Mohammad\\"'
+    FilesMainPath =  FilesMainPath[1:len(FilesMainPath)-1]
+    
+    DataPath = \
+        'Work/Phosphorus/Simulations/Data/ddPCR_Threshold/SMN2/Validation/Complete/'
+    
+    AddedPaths = FilesMainPath + DataPath
+    
+    if OperatingSystem == 'Darwin':    
+        AddedPaths = AddedPaths.replace('\\','/')
+    elif OperatingSystem == 'Windows':    
+        AddedPaths = AddedPaths.replace('/','\\')
+    
+    if os.path.isfile(AddedPaths + '.DS_Store'):
+        os.remove(AddedPaths + '.DS_Store')
+    
+    All_Sample_Results = []
+    for folder in os.listdir(AddedPaths):
+        Path = AddedPaths + folder + '/'
+        
+        if OperatingSystem == 'Darwin':    
+            Path = Path.replace('\\','/')
+        elif OperatingSystem == 'Windows':    
+            Path = Path.replace('/','\\')
+        
+        NTC_List = []
+        Sample_List = []
+        for name in os.listdir(Path):
+            if 'A03' in name or 'D01' in name and '.csv' in name:
+    #        if 'D01' in name and '.csv' in name:    
+                NTC_List.append(Path + name)
+            elif '.csv' in name: # To exclude NTC files from the analyzed wells
+                Sample_List.append(name)            
+    #        if '.csv' in name:        
+    #            Sample_List.append(name)
+            
+        Mean_Threshold, Mean_EstimatedRobustMode = NTC_Processing(Repeates, N_Block, threshold_int, NTC_List)    
+        for sample in Sample_List:
+            Sample_Results = Sample_Processing(Mean_Threshold, Mean_EstimatedRobustMode, Ratio, Path + sample)
+            All_Sample_Results.append(Sample_Results)
+     
+    Results_Method_Round = np.around(np.asarray(All_Sample_Results)) 
+    
+    ReferenceFilePath = FilesMainPath + \
+    'Work/Phosphorus/Simulations/Data/ddPCR_Threshold/SMN2/Validation/Reference/'
+    if OperatingSystem == 'Darwin':    
+            ReferenceFilePath = ReferenceFilePath.replace('\\','/')
+    elif OperatingSystem == 'Windows':    
+            ReferenceFilePath = ReferenceFilePath.replace('/','\\')
+            
+    csv = np.genfromtxt (ReferenceFilePath + 'AllValidationsCleanedSMN2.csv',delimiter=",")
+    
+    Results_True = csv[1:len(csv),1] 
+    
+    Results_CNV = csv[1:len(csv),2]
+    Results_CNV_Round = np.around(Results_CNV)
+        
+    Results_Error_Method = np.count_nonzero(Results_Method_Round - Results_True)/float(len(Results_True))
+    Results_Error_CNV = np.count_nonzero(Results_CNV_Round - Results_True)/float(len(Results_True))
+    
+    return Results_Error_Method, Results_Error_CNV, Results_Method_Round, Results_CNV_Round
+        
 #%% Use R
 import os
 import platform
@@ -152,68 +233,38 @@ evd = importr('evd')
 
 import numpy as np
 import math
+#%%
 
-#%%    
+#Repeates = 50
+#N_Block = 252
+#threshold_int = 0.99851459
+#Ratio = 1.7911230  
+#0.1879432624113475       
+
+
+#Repeates = 50
+#N_Block = 252
+#threshold_int = 0.91104808
+#Ratio = 2.15268505
+#0.14893617021276595
+
+
 Repeates = 50
-N_Block = 252
-threshold_int = 0.99851459
-Ratio = 1.7911230 
-  
-Repeates = int(np.around(Repeates))
-N_Block = int(np.around(N_Block))
-if threshold_int >= 1:        
-    threshold_int = 1 - np.finfo(float).eps
+N_Block = 258
+threshold_int = 0.89866313
+Ratio = 1.85829011
+#0.14893617021276595
 
-  
-OperatingSystem = platform.system()
-if OperatingSystem == 'Darwin':    
-    FilesMainPath = '"/Mohammad/"'
-elif OperatingSystem == 'Windows':    
-    FilesMainPath = '"C:\Mohammad\\"'
-FilesMainPath =  FilesMainPath[1:len(FilesMainPath)-1]
-
-DataPath = \
-    'Work/Phosphorus/Simulations/Data/ddPCR_Threshold/SMN1/Clinical/ddPCR_Data_082616/A/Complete/'
-
-AddedPaths = FilesMainPath + DataPath
-
-if OperatingSystem == 'Darwin':    
-    AddedPaths = AddedPaths.replace('\\','/')
-elif OperatingSystem == 'Windows':    
-    AddedPaths = AddedPaths.replace('/','\\')
-
-if os.path.isfile(AddedPaths + '.DS_Store'):
-    os.remove(AddedPaths + '.DS_Store')
-
-All_Sample_Results = {}
-for folder in os.listdir(AddedPaths):
-    Path = AddedPaths + folder + '/'
-    
-    if OperatingSystem == 'Darwin':    
-        Path = Path.replace('\\','/')
-    elif OperatingSystem == 'Windows':    
-        Path = Path.replace('/','\\')
-    
-    NTC_List = []
-    Sample_List = []
-    for name in os.listdir(Path):
-        if 'A03' in name or 'D01' in name and '.csv' in name:
-#        if 'D01' in name and '.csv' in name:    
-            NTC_List.append(Path + name)
-#        elif '.csv' in name: # To exclude NTC files from the analyzed wells
-#            Sample_List.append(name)            
-        if '.csv' in name:        
-            Sample_List.append(name)
-        
-    Mean_Threshold, Mean_EstimatedRobustMode = NTC_Processing(Repeates, N_Block, threshold_int, NTC_List)    
-    for sample in Sample_List:
-        Sample_Results = Sample_Processing(Mean_Threshold, Mean_EstimatedRobustMode, Ratio, Path + sample)
-        All_Sample_Results[sample] = Sample_Results
-            
-        
-     
+x0 = np.zeros(4)
+x0[0] = Repeates
+x0[1] = N_Block
+x0[2] = threshold_int
+x0[3] = Ratio
 
 
+Results_Error_Method, Results_Error_CNV, Results_Method_Round, Results_CNV_Round = RunOnAllValidations(x0)     
+Error_Reduction_Percent = 100 - Results_Error_Method/float(Results_Error_CNV)*100
+print Error_Reduction_Percent 
 
 
 

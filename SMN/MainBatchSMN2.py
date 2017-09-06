@@ -155,9 +155,10 @@ import math
 
 #%%    
 Repeates = 50
-N_Block = 252
-threshold_int = 0.99851459
-Ratio = 1.7911230 
+N_Block = 258
+threshold_int = 0.89866313
+Ratio = 1.85829011
+
   
 Repeates = int(np.around(Repeates))
 N_Block = int(np.around(N_Block))
@@ -173,7 +174,7 @@ elif OperatingSystem == 'Windows':
 FilesMainPath =  FilesMainPath[1:len(FilesMainPath)-1]
 
 DataPath = \
-    'Work/Phosphorus/Simulations/Data/ddPCR_Threshold/SMN1/Clinical/ddPCR_Data_082616/A/Complete/'
+    'Work/Phosphorus/Simulations/Data/ddPCR_Threshold/SMN2/AlgorithmValidation/Complete/'
 
 AddedPaths = FilesMainPath + DataPath
 
